@@ -38,7 +38,7 @@ wget_file "$url" "$dest"
 # Last file
 last="$dest.v$RANDOM"
 
-for i in "$(seq $TRIES)"; do
+for i in $(seq "$TRIES"); do
 	# Move the actal file to the last file
 	mv --force "$dest" "$last"
 
