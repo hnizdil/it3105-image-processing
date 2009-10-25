@@ -13,6 +13,11 @@ mask2 = [
 	-1 -2 -1
 ];
 
+gauss = gaussian_mask(5);
+
+disp(gauss);
+exit;
+
 fd = mopen('image.ppm', 'r');
 
 mfscanf(fd, "%s");
