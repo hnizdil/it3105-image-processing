@@ -69,3 +69,70 @@ function mask = gaussian_mask(dim)
 
 	mask = mask / sum(mask);
 endfunction
+
+function data = ppm_read(filename)
+	fd = mopen(filename, 'r');
+
+	// skip the magic number and comment lines
+	mfscanf(fd, "%s %s");
+
+	dims  = mfscanf(fd, "%u %u");
+	depth = mfscanf(fd, "%u");
+	data  = mfscanf(-1, fd, "%u %u %u");
+
+	mclose(fd);
+
+	// reformat data to three columns
+	data = matrix(data, prod(size(data))/3, 3);
+	data = list(    ...
+		data(:, 1), ...
+		data(:, 2), ...
+		data(:, 3), ...
+		dims,       ...
+		depth       ...
+	);
+endfunction
+
+function bool = ppm_from_ascii(base, dims)
+	ppm = zeros(prod(dims), 3);
+
+	// red
+	temp = fscanfMat(base + '.red.asc');
+	ppm(:, 1) = matrix(temp, prod(dims), 1);
+
+	// green
+	temp = fscanfMat(base + '.grn.asc');
+	ppm(:, 2) = matrix(temp, prod(dims), 1);
+
+	// blue
+	temp = fscanfMat(base + '.blu.asc');
+	ppm(:, 3) = matrix(temp, prod(dims), 1);
+
+	header = [
+		'P3',
+		'#',
+		sprintf('%u %u', dims(1), dims(2)),
+		sprintf('%u', max(ppm))
+	];
+
+	fprintfMat(base + '.ppm', ppm, '%12.0f', header);
+
+	bool = %T;
+endfunction
+
+function bool = pgm_from_ascii(base, dims)
+	// gray
+	pgm = fscanfMat(base + '.asc');
+	pgm = matrix(pgm($:-1:1,:), prod(dims), 1);
+
+	header = [
+		'P2',
+		'#',
+		sprintf('%u %u', dims(1), dims(2)),
+		sprintf('%u', max(pgm))
+	];
+
+	fprintfMat(base + '.pgm', pgm, '%12.0f', header);
+
+	bool = %T;
+endfunction
