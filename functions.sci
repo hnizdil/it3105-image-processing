@@ -201,6 +201,16 @@ function thres = thres_otsu_get(data)
 	thres = find(wcv == min(wcv)) - 1;
 endfunction
 
+function thres = thres_cr_get(data)
+	// initial threshold
+	thres = floor(max(data) / 2);
+
+	while %T do
+		nt = floor((mean(data(data < thres)) + mean(data(data >= thres))) / 2);
+		if (nt == thres), break, else, thres = nt, end
+	end
+endfunction
+
 function data = thres_gray_apply(data, thres, depth)
 	tmin = min(thres);
 	tmax = max(thres);
@@ -221,6 +231,52 @@ function data = thres_gray_apply(data, thres, depth)
 					end
 				end
 			end
+		end
+	end
+endfunction
+
+function bcms = bcms_bi_get(data)
+	// Normalize matrix
+	data = data / max(data);
+
+	dims = size(data);
+
+	// x center
+	xcnt = floor(mean(find(data>0) / dims(1)));
+
+	// y center
+	ycnt = floor(mean(modulo(find(data>0), dims(1))));
+
+	// body centered moment
+	u = zeros(4, 4);
+	u(1,1) = bcm_get(data, xcnt, ycnt, 0, 0);
+
+	for p = 0 : 3
+		for q = 0 : 3
+			u(p+1, q+1) = bcm_get(data, xcnt, ycnt, p, q) / (u(1,1)^((p+q)/2+1));
+		end
+	end
+
+	// h1 = u20 + u02
+	h1 = u(3,1) + u(1,3);
+
+	// h2 = (u20 - u02)^2 + 4*u11^2
+	h2 = (u(3,1) - u(1,3))^2 + 4*u(2,2)^2
+
+	// h3 = (u30 - 3*u12)^2 + (3*u21 - u03)^2
+	h3 = (u(4,1) - 3*u(2,3))^2 + (3*u(3,2) - u(1,4))^2;
+
+	// h4 = (u30 + u12)^2 + (u21 + u03)^2
+	h4 = (u(4,1) + u(2,3))^2 + (u(3,2) + u(1,4))^2
+
+	bcms = [h1, h2, h3, h4];
+endfunction
+
+function bcm = bcm_get(data, xcnt, ycnt, p, q)
+	bcm = 0;
+	for i = 1 : dims(1)
+		for j = 1 : dims(2)
+			bcm = bcm + (i-xcnt)^p * (j-ycnt)^q * data(i, j);
 		end
 	end
 endfunction

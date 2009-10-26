@@ -1,5 +1,24 @@
 getf('functions.sci');
 
+// bcms
+pgm = pgm_read('tri_thres.pgm');
+pgm(1) = pgm(2) - pgm(1);
+disp(bcms_bi_get(pgm(1)));
+
+// bi threshold truck
+pgm = pgm_read('1.pic.pgm');
+thres = thres_cr_get(pgm(1));
+pgm(1) = thres_gray_apply(pgm(1), [thres], pgm(2));
+pgm_write('test.pgm', pgm(1), pgm(2));
+exit;
+
+// bi threshold tri
+pgm = pgm_read('tri.pgm');
+thres = thres_otsu_get(pgm(1));
+pgm(1) = thres_gray_apply(pgm(1), [thres], pgm(2));
+pgm_write('tri_thres.pgm', pgm(1), pgm(2));
+exit;
+
 // color threshold
 ppm = ppm_read('1.ppm');
 thres = thres_otsu_get(ppm(1));
@@ -9,13 +28,6 @@ ppm(2) = thres_gray_apply(ppm(2), [thres], ppm(4));
 thres = thres_otsu_get(ppm(3));
 ppm(3) = thres_gray_apply(ppm(3), [thres], ppm(4));
 pgm_write('1_thres.pgm', round((ppm(1)+ppm(2)+ppm(3))/3), ppm(4));
-exit;
-
-// bi threshold
-pgm = pgm_read('tri.pgm');
-thres = thres_otsu_get(pgm(1));
-pgm(1) = thres_gray_apply(pgm(1), [thres], pgm(2));
-pgm_write('tri_thres.pgm', pgm(1), pgm(2));
 exit;
 
 // main program
