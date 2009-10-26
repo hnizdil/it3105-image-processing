@@ -1,6 +1,21 @@
 getf('functions.sci');
 
-pgm_from_ascii('1.seg', [128 128]);
+// color threshold
+ppm = ppm_read('1.ppm');
+thres = thres_otsu_get(ppm(1));
+ppm(1) = thres_gray_apply(ppm(1), [thres], ppm(4));
+thres = thres_otsu_get(ppm(2));
+ppm(2) = thres_gray_apply(ppm(2), [thres], ppm(4));
+thres = thres_otsu_get(ppm(3));
+ppm(3) = thres_gray_apply(ppm(3), [thres], ppm(4));
+pgm_write('1_thres.pgm', round((ppm(1)+ppm(2)+ppm(3))/3), ppm(4));
+exit;
+
+// bi threshold
+pgm = pgm_read('tri.pgm');
+thres = thres_otsu_get(pgm(1));
+pgm(1) = thres_gray_apply(pgm(1), [thres], pgm(2));
+pgm_write('tri_thres.pgm', pgm(1), pgm(2));
 exit;
 
 // main program
@@ -18,17 +33,10 @@ mask2 = [
 
 ppm = ppm_read('image.ppm');
 
-red = ppm(1);
-grn = ppm(2);
-blu = ppm(3);
-
-dimension = ppm(4);
+red   = ppm(1);
+grn   = ppm(2);
+blu   = ppm(3);
 depth = ppm(4);
-
-// build pixel matrices
-red = matrix(red, dimension);
-grn = matrix(grn, dimension);
-blu = matrix(blu, dimension);
 
 // Edge enhancement
 enh_red = proc(red, mask1) + proc(red, mask2);
@@ -58,5 +66,7 @@ gen_ppm_color( ...
 	depth, ...
 	"image_gaussdiff.ppm" ...
 );
+
+// threshold
 
 exit;

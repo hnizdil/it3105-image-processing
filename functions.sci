@@ -85,10 +85,9 @@ function data = ppm_read(filename)
 	// reformat data to three columns
 	data = matrix(data, prod(size(data))/3, 3);
 	data = list(    ...
-		data(:, 1), ...
-		data(:, 2), ...
-		data(:, 3), ...
-		dims,       ...
+		matrix(data(:, 1), dims), ...
+		matrix(data(:, 2), dims), ...
+		matrix(data(:, 3), dims), ...
 		depth       ...
 	);
 endfunction
@@ -98,15 +97,15 @@ function bool = ppm_from_ascii(base, dims)
 
 	// red
 	temp = fscanfMat(base + '.red.asc');
-	ppm(:, 1) = matrix(temp, prod(dims), 1);
+	ppm(:, 1) = matrix(temp', prod(dims), 1);
 
 	// green
 	temp = fscanfMat(base + '.grn.asc');
-	ppm(:, 2) = matrix(temp, prod(dims), 1);
+	ppm(:, 2) = matrix(temp', prod(dims), 1);
 
 	// blue
 	temp = fscanfMat(base + '.blu.asc');
-	ppm(:, 3) = matrix(temp, prod(dims), 1);
+	ppm(:, 3) = matrix(temp', prod(dims), 1);
 
 	header = [
 		'P3',
@@ -115,7 +114,7 @@ function bool = ppm_from_ascii(base, dims)
 		sprintf('%u', max(ppm))
 	];
 
-	fprintfMat(base + '.ppm', ppm, '%12.0f', header);
+	fprintfMat(base + '.ppm', ppm($:-1:1,:), '%0.0f', header);
 
 	bool = %T;
 endfunction
@@ -123,7 +122,7 @@ endfunction
 function bool = pgm_from_ascii(base, dims)
 	// gray
 	pgm = fscanfMat(base + '.asc');
-	pgm = matrix(pgm($:-1:1,:), prod(dims), 1);
+	pgm = matrix(pgm', prod(dims), 1);
 
 	header = [
 		'P2',
@@ -132,7 +131,96 @@ function bool = pgm_from_ascii(base, dims)
 		sprintf('%u', max(pgm))
 	];
 
-	fprintfMat(base + '.pgm', pgm, '%12.0f', header);
+	fprintfMat(base + '.pgm', pgm($:-1:1,:), '%0.0f', header);
 
 	bool = %T;
+endfunction
+
+function data = pgm_read(filename)
+	fd = mopen(filename, 'r');
+
+	// skip the magic number and comment lines
+	mfscanf(fd, "%s %s");
+
+	dims  = mfscanf(fd, "%u %u");
+	depth = mfscanf(fd, "%u");
+	data  = mfscanf(-1, fd, "%u");
+
+	mclose(fd);
+
+	data = list(             ...
+		matrix(data, dims)', ...
+		depth                ...
+	);
+endfunction
+
+function bool = pgm_write(filename, data, depth)
+	header = [
+		'P2',
+		'#',
+		sprintf('%u %u', size(data)),
+		sprintf('%u', depth)
+	];
+
+	fprintfMat(filename, data, '%0.0f', header);
+
+	bool = %T;
+endfunction
+
+function thres = thres_otsu_get(data)
+	top  = max(data);
+	area = size(data, '*');
+	prob = zeros(1, top+1);
+	wcv  = zeros(1, top+1);
+
+	// count intensity level probabilities
+	for l = 0 : top, prob(l+1) = sum(data == l), end
+
+	for t = 0 : top
+		plow  = prob(1:t);
+		phigh = prob(t+1:$);
+
+		llow  = [0:t-1];
+		lhigh = [t:top];
+
+		// weights
+		wb = sum(plow) / area;
+		wf = 1 - wb;
+
+		// means
+		mb = meanf(llow, plow);
+		mf = meanf(lhigh, phigh);
+
+		// variances
+		vb = meanf((llow - mb)^2, plow);
+		vf = meanf((lhigh - mf)^2, phigh);
+
+		wcv(t+1) = wb*vb + wf*vf;
+	end
+
+	thres = find(wcv == min(wcv)) - 1;
+endfunction
+
+function data = thres_gray_apply(data, thres, depth)
+	tmin = min(thres);
+	tmax = max(thres);
+	count = size(thres, '*');
+	thres = gsort(thres, 'g', 'i');
+
+	for i = 1 : size(data, 1)
+		for j = 1 : size(data, 2)
+			if (data(i, j) < tmin)
+				data(i, j) = 0;
+			elseif (data(i, j) >= tmax)
+				data(i, j) = depth;
+			elseif (count > 1)
+				for t = thres(1, 2:$)
+					if (data(i, j) < t)
+						data(i, j) = t-40;
+						break;
+					end
+				end
+			end
+		end
+	end
 endfunction
