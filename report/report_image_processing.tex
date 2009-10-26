@@ -1,0 +1,113 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% PBL Assignment, TDT4255 Maskinvarekonstruksjon
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%
+% braunsch@stud.ntnu.no - Robert
+% danhleco@stud.ntnu.no - Danh
+% andenor@stud.ntnu.no - Anders
+% yuyang@stud.ntnu.no - Chen
+% bentove@stud.ntnu.no - Bent Ove
+%
+\documentclass[a4paper,english,11pt,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{amsfonts}
+%\usepackage{palatino}
+\usepackage{pdfpages}
+\usepackage{textcomp}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{subfigure}
+%\usepackage{multirow}
+\usepackage{float}
+\usepackage[pdfborder=false]{hyperref}
+\usepackage[all]{hypcap}
+
+\usepackage{array}
+\usepackage{multicol}
+%more comfortable use of the bibliography
+\usepackage[numbers,sort&compress]{natbib}
+%for hyperlinks in the pdf, i.e. index-linking or web-links
+\usepackage[]{hyperref}
+
+%\floatstyle{ruled}
+%\newfloat{output}{thp}{lop}
+%\floatname{output}{Output}
+
+\thispagestyle{empty}
+
+\title{Course IT3105 \\ IMAGE PROCESSING \\ Report}
+\author{Robert Braunschweig \\ Jan Hn\'{i}zdil}
+\date{}
+
+\begin{document}
+\lstset{basicstyle=\ttfamily, showspaces=false, tabsize=4}
+\maketitle
+\thispagestyle{empty}
+\cleardoublepage
+\tableofcontents
+\cleardoublepage
+\setcounter{page}{1}
+
+\section{Introduction}
+The following document is a report for the project \emph{image processing} of the course IT3105. The goal was to get into some basic methods of image processing. For that we had to solve four exercises. The first one was simply the download and screen output of an image. A lot of images in different formats and sizes were provided via a server \footnote{\url{http://cyclops.idi.ntnu.no/~cv/data/}}. The second exercise was the processing with different masks. Further on we had to do image segmentation and pattern recognition in exercises 3 and 4.
+
+For the implementation of the project we used BASH and Scilab. Scilab was used, because it is really powerful in computing and processing matrices and with respect to the fact that images can be handled like matrices of pixels.
+
+In the following section the single steps in that project are presented including the approach and figures of the results.
+
+\section{Image Capture and Display}
+This first part of the project was not very difficult and, in addition, it is not really a problem of image processing.
+
+For downloading a valid (not changed or destroyed) image the script \lstinline&get&\-\lstinline&valid.sh& is used. It gets as parameters the URL and the local destination of the particular image. The script downloads the file with the Linux program \lstinline&wget&. After that it downloads the file again and checks whether they are the same. If they are not equal it tries again to download the image. If they are not equal after 5 tries the script exits with an error message. But if two downloaded images are equal the script finish successful, because the probability of having a valid image now is very high. The check for equality happens basically with the following code:
+
+\begin{lstlisting}
+res="$(
+		sha1sum "$dest" "$last" \
+			| uniq --check-chars 40 \
+			| wc --lines
+	)"
+\end{lstlisting}
+
+It calculates the SHA1 hash sum of two images, with the command \lstinline&sha1sum&, and checks their equality with help of \lstinline&uniq& and \lstinline&wc& \footnote{For detailed description of these programs we refer to their man-pages}.
+For the screen output of the downloaded image we use a simple Linux graphic viewer like \lstinline&xv& or \lstinline&GQview&.
+
+\section{Numerical Processing}
+The task of the second exercise was to write a program that processes an image in a special way. At the beginning of the processing we have the image in the .asc format, i.e. we have one file for grayscale pictures and three for color pictures. Since our Scilab script, \lstinline&processing_ppm.sce&, processes .ppm files we have to convert the .asc files first. That happens with the function \lstinline&ppm_from_ascii&. All own functions that are called by the main program are in \lstinline&functions.sci&.
+
+The first processing is edge enhancement. Before the processing can start the image file has to be read into a matrix in Scilab. Every pixel, i.e. every matrix element, was calculated in a linear transformation. Therefore we used the two masks below. The results of both calculations must be added as absolute values. That gives the matrix which can be written back into a .ppm file. To process the Gaussian blur it is necessary to calculate first the Gaussian mask with variable width. This is done with the function \lstinline&gaussian_mask(dim)&. The process after this is also a linear transformation. To get a difference between two Gaussian smoothed images you have to calculate th absolute value of the subtraction of two different Gaussian masks (for example, width of 5 and 9).
+
+	\[
+	\left(
+\begin{array}[l]{ccc}
+	-1 & 0 & 1 \\
+	-2 & 0 & 2 \\
+	-1 & 0 & -1 \\	
+\end{array}
+\right)
+\quad
+\left(
+\begin{array}[r]{ccc}
+	1 & 2 & 1 \\
+	0 & 0 & 0 \\
+	-1 & -2 & -1 \\	
+\end{array}
+\right)
+\]
+
+The results of our program for the first exercise are shown below.
+
+\begin{figure}[htbp]
+	\centering
+		\subfigure[][Original image]{\includegraphics[scale=0.3]{1.png}}
+		\subfigure[][Edge enhanced image]{\includegraphics[scale=0.3]{1.png}}
+	\label{ex1}
+	\caption{Results of first exercise}
+\end{figure}
+
+\end{document}
+
