@@ -97,15 +97,17 @@ function bool = ppm_from_ascii(base, dims)
 
 	// red
 	temp = fscanfMat(base + '.red.asc');
+	temp = temp($:-1:1, :);
+	fprintfMat('temp.red.asc', temp);
 	ppm(:, 1) = matrix(temp', prod(dims), 1);
 
 	// green
 	temp = fscanfMat(base + '.grn.asc');
-	ppm(:, 2) = matrix(temp', prod(dims), 1);
+	//ppm(:, 2) = matrix(temp', prod(dims), 1);
 
 	// blue
 	temp = fscanfMat(base + '.blu.asc');
-	ppm(:, 3) = matrix(temp', prod(dims), 1);
+	//ppm(:, 3) = matrix(temp', prod(dims), 1);
 
 	header = [
 		'P3',
@@ -113,8 +115,9 @@ function bool = ppm_from_ascii(base, dims)
 		sprintf('%u %u', dims(1), dims(2)),
 		sprintf('%u', max(ppm))
 	];
+	fprintfMat('temp.red.asc.proc', ppm);
 
-	fprintfMat(base + '.ppm', ppm($:-1:1,:), '%0.0f', header);
+	fprintfMat(base + '.ppm', ppm, '%0.0f', header);
 
 	bool = %T;
 endfunction
@@ -198,7 +201,7 @@ function thres = thres_otsu_get(data)
 		wcv(t+1) = wb*vb + wf*vf;
 	end
 
-	thres = find(wcv == min(wcv)) - 1;
+	thres = floor(mean(find(wcv == min(wcv)) - 1));
 endfunction
 
 function thres = thres_cr_get(data)

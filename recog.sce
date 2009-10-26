@@ -1,1 +1,0 @@
-getf('functions.sci');
